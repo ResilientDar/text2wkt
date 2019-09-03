@@ -20,7 +20,10 @@ from qgis.core import (QgsProcessing,
                        QgsProcessingParameterFileDestination,
                        QgsProcessingParameterField,
                        QgsProcessingParameterFeatureSource,
-                       QgsProcessingParameterString)
+                       QgsProcessingParameterFeatureSink,
+                       QgsProcessingParameterString,
+                       QgsProcessingParameterVectorDestination,
+                       QgsProcessingParameterVectorLayer)
 import processing
 
 import os
@@ -115,7 +118,7 @@ class Text2WKTProcessingAlgorithm(QgsProcessingAlgorithm):
                 defaultValue=","
             )
         )
-        
+       
         self.addParameter(
             QgsProcessingParameterFileDestination(
                 self.OUTPUT,
@@ -153,6 +156,9 @@ class Text2WKTProcessingAlgorithm(QgsProcessingAlgorithm):
             context
         )
 
+        # If sink was not created, throw an exception to indicate that the algorithm
+        # encountered a fatal error. 
+
         # If source was not found, throw an exception to indicate that the algorithm
         # encountered a fatal error. 
         if source is None:
@@ -164,11 +170,11 @@ class Text2WKTProcessingAlgorithm(QgsProcessingAlgorithm):
             parameters[self.DELIMITER],
             column,
             feedback,
-            parameters[self.OUPUT]
+            parameters[self.OUTPUT]
         )
 
         # Return the results of the algorithm. 
-        return {self.OUTPUT: destination}
+        return {self.OUTPUT: parameters[self.OUTPUT]}
         
     def main(self, infile, column, delimiter,
          column_name, feedback, output = None):
