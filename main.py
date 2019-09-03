@@ -19,24 +19,25 @@ from qgis.core import (QgsProcessing,
                        QgsProcessingParameterFile,
                        QgsProcessingParameterFileDestination,
                        QgsProcessingParameterField,
-                       QgsProcessingParameterFeatureSource)
+                       QgsProcessingParameterFeatureSource,
+                       QgsProcessingParameterString)
 import processing
 
 import os
 import sys
 import csv
-import argparse
 
 
 class Text2WKTProcessingAlgorithm(QgsProcessingAlgorithm):
     """
-    This is an Text2WKT algorithm that takes a csv file layer and
+    This is a Text2WKT algorithm that takes a csv file layer and
     creates a new csv result file.
     """
     # Constants used to refer to parameters and outputs. 
 
     INPUT = 'INPUT'
     COLUMN = 'COLUMN'
+    DELIMITER = 'DELIMITER'
     OUTPUT = 'OUTPUT'
 
     def tr(self, string):
@@ -105,6 +106,16 @@ class Text2WKTProcessingAlgorithm(QgsProcessingAlgorithm):
                 type = QgsProcessingParameterField.Any
             )
         )
+        
+        
+        self.addParameter(
+            QgsProcessingParameterString(
+                self.DELIMITER,
+                self.tr('Column delimiter used in the CSV file'),
+                defaultValue=","
+            )
+        )
+        
         self.addParameter(
             QgsProcessingParameterFileDestination(
                 self.OUTPUT,
@@ -130,6 +141,12 @@ class Text2WKTProcessingAlgorithm(QgsProcessingAlgorithm):
             context
         )
         
+        delimiter = self.parameterAsString(
+            parameters,
+            self.DELIMITER,
+            context
+        )
+        
         destination = self.parameterAsFileOutput(
             parameters,
             self.OUTPUT,
@@ -141,7 +158,14 @@ class Text2WKTProcessingAlgorithm(QgsProcessingAlgorithm):
         if source is None:
             raise QgsProcessingException(self.invalidSourceError(parameters, self.INPUT))
         
-        self.main(parameters[self.INPUT], None, ",",column, feedback, parameters[self.OUTPUT])
+        self.main(
+            parameters[self.INPUT],
+            None, 
+            parameters[self.DELIMITER],
+            column,
+            feedback,
+            parameters[self.OUPUT]
+        )
 
         # Return the results of the algorithm. 
         return {self.OUTPUT: destination}
@@ -167,7 +191,7 @@ class Text2WKTProcessingAlgorithm(QgsProcessingAlgorithm):
                     outrow = row
                     outrow[colindex] = self.WKT_linestring_from_nodes(node_string)
                     writer.writerow(outrow)
-            feedback.pushInfo('created output file at: \n{}\n'.format(of))
+            feedback.pushInfo('Created output file at: \n{}\n'.format(of))
             
     def WKT_linestring_from_nodes(self, node_string):
         """Takes a string of arbitrarily long strings separated by semicolons 
