@@ -13,6 +13,7 @@
 
 from PyQt5.QtCore import QCoreApplication
 from qgis.core import (QgsProcessing,
+                       QgsProject,
                        QgsFeatureSink,
                        QgsProcessingException,
                        QgsProcessingAlgorithm,
@@ -22,10 +23,10 @@ from qgis.core import (QgsProcessing,
                        QgsProcessingParameterFeatureSource,
                        QgsProcessingParameterFeatureSink,
                        QgsProcessingParameterString,
-                       QgsProcessingParameterVectorDestination,
-                       QgsProcessingParameterVectorLayer)
-import processing
+                       QgsVectorLayer)
+from qgis.utils import iface
 
+import processing
 import os
 import sys
 import csv
@@ -110,7 +111,6 @@ class Text2WKTProcessingAlgorithm(QgsProcessingAlgorithm):
             )
         )
         
-        
         self.addParameter(
             QgsProcessingParameterString(
                 self.DELIMITER,
@@ -118,11 +118,12 @@ class Text2WKTProcessingAlgorithm(QgsProcessingAlgorithm):
                 defaultValue=","
             )
         )
-       
+        
         self.addParameter(
             QgsProcessingParameterFileDestination(
                 self.OUTPUT,
-                self.tr('Output file')
+                self.tr('Output file'),
+                'CSV files (*.csv)',
             )
         )
 
@@ -154,10 +155,7 @@ class Text2WKTProcessingAlgorithm(QgsProcessingAlgorithm):
             parameters,
             self.OUTPUT,
             context
-        )
-
-        # If sink was not created, throw an exception to indicate that the algorithm
-        # encountered a fatal error. 
+        )        
 
         # If source was not found, throw an exception to indicate that the algorithm
         # encountered a fatal error. 
@@ -172,9 +170,29 @@ class Text2WKTProcessingAlgorithm(QgsProcessingAlgorithm):
             feedback,
             parameters[self.OUTPUT]
         )
+        
+        # # Loading the layer in QGIS
+        
+        # output_file_uri = 'file://{}?delimiter={}&crs=EPSG:4326&wktField={}'.format(
+        #     parameters[self.OUTPUT], 
+        #     parameters[self.DELIMITER],
+        #     parameters[self.COLUMN])
+        
+        # csv_layer = QgsVectorLayer(output_file_uri, 'Output', 'ogr')
+        
+        # #Check if layer is valid
+        # if not csv_layer.isValid():
+        #     feedback.pushInfo("Layer not loaded")
+        # else:
+        #     feedback.pushInfo('Layer loaded')
+
+        # #Add csv output file    
+        # iface.addVectorLayer(output_file_uri, 'Output Layer', 'delimitedtext')
+        # iface.mapCanvas().refresh()
+        
 
         # Return the results of the algorithm. 
-        return {self.OUTPUT: parameters[self.OUTPUT]}
+        return {self.OUTPUT: destination}
         
     def main(self, infile, column, delimiter,
          column_name, feedback, output = None):

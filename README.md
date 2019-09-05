@@ -1,6 +1,6 @@
  # QGIS Algorithm that converts ODK Geotraces to Well-Known Text linestrings
 
- Based on [OMDTZ script](https://github.com/ivangayton/ODK_geotrace_to_WKT/blob/master/lines_to_wkt.py)
+ Based on this [OMDTZ script](https://github.com/ivangayton/ODK_geotrace_to_WKT/blob/master/lines_to_wkt.py)
 
  # How to use
 
