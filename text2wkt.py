@@ -112,18 +112,6 @@ class Text2WKTProcessingAlgorithm(QgsProcessingAlgorithm):
             )
         )
         
-        delimiterOptions = [
-            self.tr(','),
-            self.tr(';'),
-            self.tr('tab')
-        ]
-        
-        self.addParameter(QgsProcessingParameterEnum(
-            self.DELIMITER,
-            self.tr('Column delimiter used in the CSV file'),
-            options = delimiterOptions,
-            defaultValue = 0))
-        
         self.addParameter(
             QgsProcessingParameterFileDestination(
                 self.OUTPUT,
@@ -149,19 +137,6 @@ class Text2WKTProcessingAlgorithm(QgsProcessingAlgorithm):
             self.COLUMN,
             context
         )
-        
-        delimiterIndex = self.parameterAsEnum(
-            parameters, 
-            self.DELIMITER, 
-            context
-        )
-        
-        if delimiterIndex == 0:
-            delimiter = ","
-        elif delimiterIndex == 1:
-            delimiter = ";"
-        else:
-            delimiter = "\t"
         
         destination = self.parameterAsFileOutput(
             parameters,
