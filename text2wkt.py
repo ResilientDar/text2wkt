@@ -17,6 +17,7 @@ from qgis.core import (QgsProcessing,
                        QgsFeatureSink,
                        QgsProcessingException,
                        QgsProcessingAlgorithm,
+                       QgsProcessingParameterEnum,
                        QgsProcessingParameterFile,
                        QgsProcessingParameterFileDestination,
                        QgsProcessingParameterField,
@@ -82,8 +83,8 @@ class Text2WKTProcessingAlgorithm(QgsProcessingAlgorithm):
         """
         Returns a localised short helper string for the algorithm.
         """
-        return self.tr("Converts geotraces from ODK to Well-Known Text \n\n"
-                        "Takes a CSV file containing line strings from an"
+        return self.tr("Converts geotraces from ODK to Well-Known Text \n\n "
+                        "Takes a CSV file containing line strings from an "
                         "OpenDataKit Geotrace, which consist of a series "
                         "of text coordinates, and returns a similar CSV file "
                         "with properly formatted Well-Known Text (WKT) "
@@ -111,13 +112,17 @@ class Text2WKTProcessingAlgorithm(QgsProcessingAlgorithm):
             )
         )
         
-        self.addParameter(
-            QgsProcessingParameterString(
-                self.DELIMITER,
-                self.tr('Column delimiter used in the CSV file'),
-                defaultValue=","
-            )
-        )
+        delimiterOptions = [
+            self.tr(','),
+            self.tr(';'),
+            self.tr('tab')
+        ]
+        
+        self.addParameter(QgsProcessingParameterEnum(
+            self.DELIMITER,
+            self.tr('Column delimiter used in the CSV file'),
+            options = delimiterOptions,
+            defaultValue = 0))
         
         self.addParameter(
             QgsProcessingParameterFileDestination(
@@ -145,11 +150,18 @@ class Text2WKTProcessingAlgorithm(QgsProcessingAlgorithm):
             context
         )
         
-        delimiter = self.parameterAsString(
-            parameters,
-            self.DELIMITER,
+        delimiterIndex = self.parameterAsEnum(
+            parameters, 
+            self.DELIMITER, 
             context
         )
+        
+        if delimiterIndex == 0:
+            delimiter = ","
+        elif delimiterIndex == 1:
+            delimiter = ";"
+        else:
+            delimiter = "\t"
         
         destination = self.parameterAsFileOutput(
             parameters,
@@ -165,41 +177,23 @@ class Text2WKTProcessingAlgorithm(QgsProcessingAlgorithm):
         self.main(
             parameters[self.INPUT],
             None, 
-            parameters[self.DELIMITER],
             column,
             feedback,
             parameters[self.OUTPUT]
         )
-        
-        # # Loading the layer in QGIS
-        
-        # output_file_uri = 'file://{}?delimiter={}&crs=EPSG:4326&wktField={}'.format(
-        #     parameters[self.OUTPUT], 
-        #     parameters[self.DELIMITER],
-        #     parameters[self.COLUMN])
-        
-        # csv_layer = QgsVectorLayer(output_file_uri, 'Output', 'ogr')
-        
-        # #Check if layer is valid
-        # if not csv_layer.isValid():
-        #     feedback.pushInfo("Layer not loaded")
-        # else:
-        #     feedback.pushInfo('Layer loaded')
-
-        # #Add csv output file    
-        # iface.addVectorLayer(output_file_uri, 'Output Layer', 'delimitedtext')
-        # iface.mapCanvas().refresh()
-        
 
         # Return the results of the algorithm. 
         return {self.OUTPUT: destination}
         
-    def main(self, infile, column, delimiter,
+    def main(self, infile, column,
          column_name, feedback, output = None):
         """Iterates through a CSV and writes a CSV with converted linestrings."""
 
         # Avoid choking the CSV library with a long linestring
         csv.field_size_limit(100000000)
+        
+        # Auto detect the file delimiter
+        delimiter = self.detect_csv_delimiter(infile)
 
         with open(infile) as line_data:
             reader = csv.reader(line_data, delimiter = delimiter)
@@ -238,3 +232,16 @@ class Text2WKTProcessingAlgorithm(QgsProcessingAlgorithm):
             return linestring
         else:
             return None
+            
+    def detect_csv_delimiter(self, csv_file):
+        """Takes a csv file and returns its delimiter, uses Sniffer library"""
+        
+        # Initializing delimiter with a default value
+        delimiter = ','
+        
+        with open(csv_file, 'r') as csvfile:
+            dialect = csv.Sniffer().sniff(csvfile.read(1024))
+            delimiter = dialect.delimiter
+        
+        return delimiter
+            
